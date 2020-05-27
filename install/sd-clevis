@@ -1,0 +1,32 @@
+#!/bin/sh
+
+build() {
+    add_binary "clevis"
+    add_binary "clevis-decrypt-tang"
+    add_binary "clevis-decrypt-sss"
+    add_binary "clevis-decrypt"
+    add_binary "clevis-decrypt-tpm2"
+    add_binary "clevis-luks-unlock"
+    add_binary "tpm2_createprimary"
+    add_binary "tpm2_unseal"
+    add_binary "tpm2_load"
+    add_binary "tpm2_unseal"
+    add_binary "luksmeta"
+    add_binary "jose"
+
+    for _LIBRARY in /usr/lib/libtss2-tcti-device.so*; do
+        if [ -e "${_LIBRARY}" ]; then
+            add_binary "${_LIBRARY}"
+        fi
+    done
+    add_all_modules "/char/tpm/"
+    add_systemd_unit "systemd-clevis-unlock.service"
+}
+
+help() {
+    cat <<HELPEOF
+This hook allows for an encrypted root device with clevis
+HELPEOF
+}
+
+# vim: set ft=sh ts=4 sw=4 et:

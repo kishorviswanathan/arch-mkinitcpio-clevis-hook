@@ -1,0 +1,11 @@
+[Unit]
+Description=Unlock rootfs with clevis
+Documentation=man:clevis-luks-unlock(1)
+DefaultDependencies=no
+Conflicts=shutdown.target emergency.service
+After=plymouth-start.service systemd-vconsole-setup.service
+Before=shutdown.target
+
+[Service]
+ExecStart=/usr/bin/clevis luks unlock -d /dev/disk/by-uuid/3dfe606f-6056-43bf-b0db-2745dd78c1dd
+ExecStartPost=-systemctl stop systemd-ask-password-console.path systemd-ask-password-console.service

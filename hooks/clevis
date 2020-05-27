@@ -1,0 +1,72 @@
+#!/usr/bin/ash
+
+run_hook() {
+    modprobe -a -q dm-crypt >/dev/null 2>&1
+    [ "${quiet}" = "y" ] && CSQUIET=">/dev/null"
+
+    if [ -n "${cryptdevice}" ]; then
+        IFS=: read cryptdev cryptname cryptoptions <<EOF
+$cryptdevice
+EOF
+    fi
+
+    # This may happen if third party hooks do the crypt setup
+    if [ -b "/dev/mapper/${cryptname}" ]; then
+        echo "Device ${cryptname} already exists, not doing any crypt setup."
+        return 0
+    fi
+
+    if resolved=$(resolve_device "${cryptdev}" ${rootdelay}); then
+        if cryptsetup isLuks ${resolved} >/dev/null 2>&1; then
+            echo ""
+            echo "Attempting TPM unlock on ${cryptname} volume"
+            if [ -f /etc/keyfile.jwe ]; then
+                echo "Unlocking with keyfile"
+                if clevis decrypt < /etc/keyfile.jwe > /tmp/key; then
+                    if cryptsetup open ${resolved} ${cryptname} --key-file /tmp/key; then
+                        rm -f /tmp/key
+                        echo "Unlocked with keyfile"
+                        return 0
+                    else
+                        err "Cannot open LUKS volume with keyfile"
+                        return 1
+                    fi
+                else
+                    err "Cannot decrypt keyfile"
+                    return 1
+                fi
+            fi
+
+            if [ -f /etc/passphrase.jwe ]; then
+                echo "Unlocking with passphrase"
+                password=$(clevis decrypt < /etc/passphrase.jwe)
+                if [ -n "$password" ]; then
+                    if echo "$password" | cryptsetup open ${resolved} ${cryptname}; then
+                        echo "Unlocked with passphrase"
+                        return 0
+                    else
+                        err "Cannot open LUKS volume with passphrase"
+                        return 1
+                    fi
+                else
+                    err "Cannot decrypt passphrase"
+                    return 1
+                fi
+            fi
+
+            if ! /usr/bin/clevis luks unlock -d ${resolved} -n ${cryptname}; then
+                err "TPM unlock failed"
+                return 1
+            fi
+
+            if [ ! -e "/dev/mapper/${cryptname}" ]; then
+                err "Unlock succeeded, but ${cryptname} creation failed, aborting..."
+                return 1
+            fi
+        else
+            err "Failed to open encryption mapping: The device ${cryptdev} is not a LUKS volume and the crypto= paramater was not specified."
+        fi
+    fi
+}
+
+# vim: set ft=sh ts=4 sw=4 et:

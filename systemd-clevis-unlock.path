@@ -1,0 +1,12 @@
+[Unit]
+Description=Dispatch Password Requests to Clevis Watch
+Documentation=man:systemd-clevis-unlock.service(8)
+DefaultDependencies=no
+Conflicts=shutdown.target emergency.service
+After=plymouth-start.service
+Before=paths.target shutdown.target cryptsetup.target systemd-ask-password-console.service
+ConditionPathExists=!/run/plymouth/pid
+
+[Path]
+DirectoryNotEmpty=/run/systemd/ask-password
+MakeDirectory=yes
