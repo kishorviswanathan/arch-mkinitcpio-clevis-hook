@@ -4,8 +4,13 @@ build() {
     add_all_modules "/char/tpm/"
     add_binary "bash"
     add_binary "tr"
-    add_binary "clevis-decrypt-tpm2"
-    add_binary "clevis-luks-unlock"
+    add_binary "grep"
+    add_binary "sed"
+
+    for _LIBRARY in /usr/bin/clevis*; do
+        add_binary "${_LIBRARY}"
+    done
+
     add_binary "jose"
     add_binary "luksmeta"
     add_binary "tpm2_createprimary"
@@ -18,32 +23,16 @@ build() {
         fi
     done
 
-    if [ -f /etc/keyfile.jwe ]; then
-        add_file "/etc/keyfile.jwe";
-    fi
-
-    if [ -f /etc/passphrase.jwe ]; then
-        add_file "/etc/passphrase.jwe";
-    fi
-
     add_runscript
 }
 
 help() {
     cat <<HELPEOF
-This hook decrypts an encrypted root device with clevis tpm2.
-Modes:
-1. Clevis LUKS bind
+This hook will attempt to decrypt the LUKS devices with TPM using clevis.
+To create a binding, use the following command:
 # clevis luks bind -d /dev/nvme0n1p2 tpm2 '{"pcr_bank":"sha256","pcr_ids":"0,1,7"}'
-2. Clevis encrypted keyfile (place at /etc/keyfile.jwe)
-# dd bs=512 count=4 if=/dev/urandom iflag=fullblock of=/root/keyfile
-# cryptsetup luksAddKey /dev/nvme0n1p2 /root/keyfile
-# cat /root/keyfile | clevis encrypt tpm2 '{"pcr_bank":"sha256","pcr_ids":"0,1,7"}' > /etc/keyfile.jwe
-3. Clevis encrypted passphrase (place at /etc/passphrase.jwe)
-# echo "password" | clevis encrypt tpm2 '{"pcr_bank":"sha256","pcr_ids":"0,1,7"}' > /etc/passphrase.jwe
 
-If your configuration changed, you will need to re-encrypt the key. If using LUKS binding,
-you will have to unbind and bind again. Otherwise simply encrypt the key/password again.
+If your configuration changed, you will have to unbind and bind again.
 HELPEOF
 }
 
