@@ -1,0 +1,39 @@
+#!/bin/sh
+
+build() {
+    add_all_modules "/char/tpm/"
+    add_binary "bash"
+    add_binary "tr"
+    add_binary "grep"
+    add_binary "sed"
+
+    for _LIBRARY in /usr/bin/clevis*; do
+        add_binary "${_LIBRARY}"
+    done
+
+    add_binary "jose"
+    add_binary "luksmeta"
+    add_binary "tpm2_createprimary"
+    add_binary "tpm2_load"
+    add_binary "tpm2_unseal"
+
+    for _LIBRARY in /usr/lib/libtss2-tcti-device.so*; do
+        if [ -e "${_LIBRARY}" ]; then
+            add_binary "${_LIBRARY}"
+        fi
+    done
+
+    add_runscript
+}
+
+help() {
+    cat <<HELPEOF
+This hook will attempt to decrypt the LUKS devices with TPM using clevis.
+To create a binding, use the following command:
+# clevis luks bind -d /dev/nvme0n1p2 tpm2 '{"pcr_bank":"sha256","pcr_ids":"0,1,7"}'
+
+If your configuration changed, you will have to unbind and bind again.
+HELPEOF
+}
+
+# vim: set ft=sh ts=4 sw=4 et:

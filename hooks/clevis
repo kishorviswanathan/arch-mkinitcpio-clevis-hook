@@ -1,0 +1,43 @@
+#!/usr/bin/ash
+
+run_hook() {
+    modprobe -a -q dm-crypt >/dev/null 2>&1
+    [ "${quiet}" = "y" ] && CSQUIET=">/dev/null"
+
+    if [ -n "${cryptdevice}" ]; then
+        IFS=: read cryptdev cryptname cryptoptions <<EOF
+$cryptdevice
+EOF
+    fi
+
+    # This may happen if third party hooks do the crypt setup
+    if [ -b "/dev/mapper/${cryptname}" ]; then
+        echo "Device ${cryptname} already exists, not doing any crypt setup."
+        return 0
+    fi
+
+    if resolved=$(resolve_device "${cryptdev}" ${rootdelay}); then
+        if cryptsetup isLuks ${resolved} >/dev/null 2>&1; then
+            # /dev/fd missing somehow
+            [ ! -d /dev/fd ] && ln -s /proc/self/fd /dev/
+            echo ""
+            echo "Attempting to unlock ${resolved} with TPM..."
+
+            if ! clevis-luks-unlock -d ${resolved} -n ${cryptname}; then
+                err "TPM unlock failed."
+                return 1
+            fi
+
+            echo "TPM unlock succeeded."
+
+            if [ ! -e "/dev/mapper/${cryptname}" ]; then
+                err "${cryptname} creation failed, aborting..."
+                return 1
+            fi
+        else
+            err "Failed to open encryption mapping: The device ${cryptdev} is not a LUKS volume and the crypto= paramater was not specified."
+        fi
+    fi
+}
+
+# vim: set ft=sh ts=4 sw=4 et:
