@@ -1,20 +1,46 @@
 # Introduction
 
-The systemd version doesn't work.
+A simple hook to unlock LUKS devices on boot using TPM and `clevis`.
 
-The busybox version should be placed before the 'encrypt' hook (the encrypt hook is required).
+Tested System:
+* Manjaro Linux 20.2.1 with `systemd-boot` and `mkinitcpio`.
 
-###
+# Installing
+
+1. Install the following packages.
+    ```sh
+    sudo pacman --needed -S clevis tpm2-tools luksmeta libpwquality
+    ```
+2. Add `clevis` binding to your LUKS device
+    ```sh
+    sudo clevis luks bind -d <device> tpm2 '{"pcr_ids":"0,1,2,3,4,5,6,7"}'
+    ```
+3. Install the `clevis` hook
+    ```sh
+    sudo ./install.sh
+    sudo vim /etc/mkinitcpio.conf
+    # Edit the hooks and add clevis before the 'encrypt' hook. Eg:
+    # HOOKS=(.. clevis encrypt ..) 
+    ```
+4. Generate `initramfs` image.
+    ```sh
+    sudo mkinitcpio -P
+    ```
+5. Reboot
+
+# Updating
+
+If you have updated any of the settings in BIOS, changed anything in the kernel options, you have to recreate the  `clevis` binding as TPM will not be able to unlock the device.
+
 ```sh
-# 1. Check which slot clevis is using
-    clevis luks list -d /dev/nvme0n1p2
-1: tpm2 '{"hash":"sha256","key":"ecc","pcr_bank":"sha256","pcr_ids":"0,1,7"}'
-# 2. Unbind slot (DOUBLE CHECK SLOT!)
-    clevis luks unbind -d /dev/nvme0n1p2 -s 1
-The unbind operation will wipe a slot. This operation is unrecoverable.
-Do you wish to erase LUKS slot 1 on /dev/nvme0n1p2? [ynYN] Y
-Enter any remaining passphrase:
-# 3. Bind again
-    clevis luks bind -d /dev/nvme0n1p2 tpm2 '{"pcr_bank":"sha256","pcr_ids":"0,1,7"}'
-Enter existing LUKS password:
+sudo clevis luks unbind -d <device> -s <slot-id> # slot-id is usually 1
+sudo clevis luks bind -d <device> tpm2 '{"pcr_ids":"0,1,2,3,4,5,6,7"}'
 ```
+
+# Troubleshooting
+
+Usually unlocking fails only when any of the TPM registers were updated as part of a system configuration change. Try rebooting the system and re adding the `clevis` LUKS binding. In most cases this should fix the issue. Feel free to create an issue if your problem is not resolved.
+
+# Credits
+
+Forked from [arch-clevis](https://gitlab.com/cosandr/arch-clevis) by [Andrei Costescu](https://gitlab.com/cosandr). I just simplified, fixed some bugs and added a clear readme.
