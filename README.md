@@ -22,6 +22,7 @@ Tested System:
     # Edit the hooks and add clevis before the 'encrypt' hook. Eg:
     # HOOKS=(.. clevis encrypt ..) 
     ```
+    Note: If you are using `plymouth`, replace the `plymouth-encrypt` hook with `encrypt`. `plymouth-encrypt` is reported to be buggy when the device is already unlocked. [More info.](https://github.com/kishorv06/arch-mkinitcpio-clevis-hook/issues/1)
 4. Generate `initramfs` image.
     ```sh
     sudo mkinitcpio -P
