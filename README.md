@@ -1,5 +1,10 @@
 # Introduction
 
+---
+**Update: Starting with systemd version 248, TPM2 unlock support is built-in and it is much faster than clevis. Follow [this](https://gist.github.com/chrisx8/cda23e2d1fa3dcda0d739bc74f600175) guide to get it working.**
+
+---
+
 A simple hook to unlock LUKS devices on boot using TPM and `clevis`.
 
 Tested System:
