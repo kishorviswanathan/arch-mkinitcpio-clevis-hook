@@ -2,6 +2,7 @@
 
 ---
 **Update: Starting with systemd version 248, TPM2 unlock support is built-in and it is much faster than clevis. Follow [this](https://wiki.archlinux.org/title/Trusted_Platform_Module#systemd-cryptenroll) guide to get it working.**
+
 **Update 2: Do not attempt to use the systemd version of TPM2 unlock if you don't use systemd.**
 
 ---
