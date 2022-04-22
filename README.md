@@ -9,30 +9,13 @@ A simple hook to unlock LUKS devices on boot using TPM and `clevis`.
 
 Tested System:
 * Manjaro Linux 20.2.1 with `systemd-boot` and `mkinitcpio`.
+* Artix Linux OpenRC (Linux 5.17.4-artix1-1) wiht `grub` and `mkinitcpio`.
 
 # Installing
 
-1. Install the following packages.
-    ```sh
-    sudo pacman --needed -S clevis tpm2-tools luksmeta libpwquality
-    ```
-2. Add `clevis` binding to your LUKS device
-    ```sh
-    sudo clevis luks bind -d <device> tpm2 '{"pcr_ids":"0,1,2,3,4,5,6,7"}'
-    ```
-3. Install the `clevis` hook
-    ```sh
-    sudo ./install.sh
-    sudo vim /etc/mkinitcpio.conf
-    # Edit the hooks and add clevis before the 'encrypt' hook. Eg:
-    # HOOKS=(.. clevis encrypt ..) 
-    ```
-    Note: If you are using `plymouth`, replace the `plymouth-encrypt` hook with `encrypt`. `plymouth-encrypt` is reported to be buggy when the device is already unlocked. [More info.](https://github.com/kishorv06/arch-mkinitcpio-clevis-hook/issues/1)
-4. Generate `initramfs` image.
-    ```sh
-    sudo mkinitcpio -P
-    ```
-5. Reboot
+1. Install the `mkinitcpio-clevis-hook` package from the AUR.
+    Note: If you are using `plymouth`, replace the `plymouth-encrypt` hook with `encrypt` in your `/etc/mkinitcpio.conf` file. `plymouth-encrypt` is reported to be buggy when the device is already unlocked. [More info.](https://github.com/kishorv06/arch-mkinitcpio-clevis-hook/issues/1)
+2. Reboot.
 
 # Updating
 
@@ -49,4 +32,4 @@ Usually unlocking fails only when any of the TPM registers were updated as part 
 
 # Credits
 
-Forked from [arch-clevis](https://gitlab.com/cosandr/arch-clevis) by [Andrei Costescu](https://gitlab.com/cosandr). I just simplified, fixed some bugs and added a clear readme.
+Forked from [arch-mkinitcpio-clevis-hook](https://github.com/kishorv06/arch-mkinitcpio-clevis-hook/) [arch-clevis](https://gitlab.com/cosandr/arch-clevis) by [Andrei Costescu](https://gitlab.com/cosandr). @kishorv06 just simplified, fixed some bugs & added a clear readme, and I just adapted it so this can be used in the AUR for easier install and uninstall.
