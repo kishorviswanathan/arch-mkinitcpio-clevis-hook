@@ -9,7 +9,7 @@
 
 A simple hook to unlock LUKS devices on boot using TPM and `clevis`.
 
-Tested System:
+Tested Systems:
 * Manjaro Linux 20.2.1 with `systemd-boot` and `mkinitcpio`.
 * Artix Linux OpenRC (Linux 5.17.4-artix1-1) with `grub` and `mkinitcpio`.
 
@@ -17,7 +17,7 @@ Tested System:
 
 ## AUR Method
 
-1. Install the `mkinitcpio-clevis-hook` package from the AUR (this installs all dependencies).
+1. Install the `mkinitcpio-clevis-hook` package from the AUR (this installs all dependencies, as well as the hook).
 2. Add `clevis` binding to your LUKS device.
     ```sh
     sudo clevis luks bind -d <device> tpm2 '{"pcr_ids":"0,1,2,3,4,5,6,7"}'
