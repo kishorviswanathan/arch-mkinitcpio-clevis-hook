@@ -12,6 +12,7 @@ A simple hook to unlock LUKS devices on boot using TPM and `clevis`.
 Tested Systems:
 * Manjaro Linux 20.2.1 with `systemd-boot` and `mkinitcpio`.
 * Artix Linux OpenRC (Linux 5.17.4-artix1-1) with `grub` and `mkinitcpio`.
+* Arch Linux (Linux 5.17.4.arch1-1) with `grub` and `mkinitcpio`.
 
 # Installing
 
