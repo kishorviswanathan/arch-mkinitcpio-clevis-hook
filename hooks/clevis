@@ -1,43 +1,72 @@
 #!/usr/bin/ash
 
-run_hook() {
-    modprobe -a -q dm-crypt >/dev/null 2>&1
-    [ "${quiet}" = "y" ] && CSQUIET=">/dev/null"
+unlock_one() {
+    local entry="$1" cryptdev cryptname cryptoptions resolved
 
-    if [ -n "${cryptdevice}" ]; then
-        IFS=: read cryptdev cryptname cryptoptions <<EOF
-$cryptdevice
+    IFS=: read cryptdev cryptname cryptoptions <<EOF
+$entry
 EOF
-    fi
+ 
+    echo "Unlocking ${cryptdev} as ${cryptname}..."
 
-    # This may happen if third party hooks do the crypt setup
+    # If a third-party hook already mapped it, skip
     if [ -b "/dev/mapper/${cryptname}" ]; then
         echo "Device ${cryptname} already exists, not doing any crypt setup."
         return 0
     fi
 
     if resolved=$(resolve_device "${cryptdev}" ${rootdelay}); then
-        if cryptsetup isLuks ${resolved} >/dev/null 2>&1; then
+        if cryptsetup isLuks "${resolved}" >/dev/null 2>&1; then
             # /dev/fd missing somehow
             [ ! -d /dev/fd ] && ln -s /proc/self/fd /dev/
-            echo ""
-            echo "Attempting to unlock ${resolved} with TPM..."
+            
+	    echo "Attempting to unlock ${resolved} with TPM..."
 
-            if ! clevis-luks-unlock -d ${resolved} -n ${cryptname}; then
-                err "TPM unlock failed."
+            if ! clevis-luks-unlock -d "${resolved}" -n "${cryptname}"; then
+                err "TPM unlock failed for ${cryptname}."
                 return 1
             fi
 
-            echo "TPM unlock succeeded."
+            echo "TPM unlock succeeded for ${cryptname}."
 
             if [ ! -e "/dev/mapper/${cryptname}" ]; then
-                err "${cryptname} creation failed, aborting..."
+                err "${cryptname} creation failed, aborting this mapping..."
                 return 1
             fi
         else
-            err "Failed to open encryption mapping: The device ${cryptdev} is not a LUKS volume and the crypto= paramater was not specified."
+            err "Failed to open encryption mapping: ${cryptdev} is not a LUKS volume and the crypto= parameter was not specified."
+            return 1
         fi
     fi
+
+    return 0
+}
+
+run_hook() {
+    modprobe -a -q dm-crypt >/dev/null 2>&1
+    [ "${quiet}" = "y" ] && CSQUIET=">/dev/null"
+
+    # Collect all cryptdevice= entries (support multiple occurrences)
+    cryptdevices=""
+    [ -n "${cryptdevice}" ] && cryptdevices="${cryptdevice}"
+
+    for tok in $(cat /proc/cmdline); do
+        case "$tok" in
+        cryptdevice=*)
+            val="${tok#cryptdevice=}"
+            # Avoid trivial duplicate of the already-parsed one
+            [ "$val" = "$cryptdevice" ] || cryptdevices="${cryptdevices} ${val}"
+            ;;
+        esac
+    done
+
+    # Nothing to do?
+    [ -z "${cryptdevices# }" ] && return 0
+
+    # Iterate and attempt unlocks independently
+    for entry in ${cryptdevices}; do
+        unlock_one "$entry" || true
+    done
 }
 
 # vim: set ft=sh ts=4 sw=4 et:
